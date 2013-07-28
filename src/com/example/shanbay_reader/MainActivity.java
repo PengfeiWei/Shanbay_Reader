@@ -14,10 +14,13 @@ import org.w3c.dom.NodeList;
 
 import android.os.Bundle;
 import android.app.ListActivity;
+import android.content.Intent;
 import android.content.res.AssetManager;
 import android.util.Log;
 import android.view.Menu;
+import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.ListView;
 
 public class MainActivity extends ListActivity {
 
@@ -39,9 +42,10 @@ public class MainActivity extends ListActivity {
 
 	private static final String TAG = "Shanbay_Reader";
 	private List<String> listTitle = new ArrayList<String>();
+	private NodeList nodesTitle;
 	
-	//获取所有文章标题
-	private void getTitles()
+	//获取文章标题的节点列表
+	private void getNodesTitle()
 	{
 		try
 		{
@@ -52,10 +56,23 @@ public class MainActivity extends ListActivity {
 	        DocumentBuilder builder = factory.newDocumentBuilder();      
 	        Document document = builder.parse(is);             
 	        Element root = document.getDocumentElement();         
-	        NodeList nodes = root.getElementsByTagName("string");
-	        for (int i = 0; i < nodes.getLength(); i++)
+	        nodesTitle = root.getElementsByTagName("string");
+		}
+		catch(Exception err)
+		{
+			Log.v(TAG, err.toString());
+		}
+	}
+	
+	//获取所有文章标题
+	private void getTitles()
+	{
+		try
+		{
+			getNodesTitle();
+	        for (int i = 0; i < nodesTitle.getLength(); i++)
 	        {
-	        	Node node = nodes.item(i);
+	        	Node node = nodesTitle.item(i);
 	        	String item = node.getFirstChild().getNodeValue();
 	        	listTitle.add(item);
 	        }
@@ -72,6 +89,32 @@ public class MainActivity extends ListActivity {
 		setListAdapter(new ArrayAdapter<String>(this,
 						                        android.R.layout.simple_list_item_1,
 						                        listTitle));
+	}
+	
+	@Override
+	protected void onListItemClick(ListView l, View v, int position, long id)
+	{
+		super.onListItemClick(l, v, position, id);
+		
+		//实际存储中position 1,2,3...n就对应着lesson1,lesson2,lesson3...lessonn， 为了易维护，还是对文章题目进行匹配
+		String title = l.getItemAtPosition(position).toString();
+		String titleLesson = new String();
+		for(int i = 0; i < nodesTitle.getLength(); i++)
+		{
+			if(nodesTitle.item(i).getFirstChild().getNodeValue().equals(title))
+			{
+				titleLesson = nodesTitle.item(i).getAttributes().getNamedItem("name").getNodeValue();
+			}
+		}
+		
+		Bundle bundle = new Bundle();
+		bundle.putString("LESSON", titleLesson);
+		
+		Intent intent = new Intent();
+		intent.setClass(this, TextActivity.class);
+		intent.putExtras(bundle);
+		
+		startActivity(intent);
 	}
 	
 
